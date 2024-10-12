@@ -1,7 +1,6 @@
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
 }
 
@@ -24,6 +23,7 @@
     margin-bottom: 30px;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 6px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -32,7 +32,7 @@
 
 #selectField img {
     width: 12px;
-    transition: transform 0.3s;
+    transition: transform 0.5s;
 }
 
 #list {
@@ -60,4 +60,12 @@
 
 .options:hover {
     background: rgba(255, 255, 255, 0.7);
+}
+
+.hide{
+    visibility: hidden;
+}
+
+.rotate{
+    transform: rotate(180deg);
 }
