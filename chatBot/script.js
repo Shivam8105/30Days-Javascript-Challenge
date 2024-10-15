@@ -1,6 +1,8 @@
 const messageInput = document.querySelector(".message-input");
 const chatBody = document.querySelector(".chat-body");
 const sendMessageButton = document.querySelector("#send-message");
+const fileInput = document.querySelector("#file-input");
+const fileUploadWrapper = document.querySelector(".file-upload-wrapper");
 
 const API_KEY = "AIzaSyDPn1YD6ev4CqXvHKNX-8P6pbcnPD4DgOY";
 
@@ -8,6 +10,10 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-
 
 const userData = {
   message: null,
+  file: {
+    data: null,
+    mime_type: null,
+  },
 };
 
 const createMessageElement = (content, ...classes) => {
@@ -17,45 +23,84 @@ const createMessageElement = (content, ...classes) => {
   return div;
 };
 
-const generateBotResponse = async(incomingMessageDiv) => {
-    const messageElement = incomingMessageDiv.querySelector(".message-text");
+const generateBotResponse = async (incomingMessageDiv) => {
+  const messageElement = incomingMessageDiv.querySelector(".message-text");
 
-    const requestOptions = {
-        method: "POST",
-        headers: {
-            "Content-Type" : "application/json"
-        },
-        body:JSON.stringify({
-            contents: [{
-                parts: [{text: userData.message}]
-            }]
-        })
+  const requestBody = {
+    contents: [
+      {
+        parts: [
+          { text: userData.message },
+        ],
+      },
+    ],
+  };
+
+  // Add image data to the request if available
+  if (userData.file.data) {
+    requestBody.contents[0].parts.push({
+      inline_data: {
+        mime_type: userData.file.mime_type,
+        data: userData.file.data
+      }
+    });
+  }
+
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestBody),
+  };
+
+  try {
+    const response = await fetch(API_URL, requestOptions);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error.message);
+
+    let apiResponseText;
+    if (
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts[0].text
+    ) {
+      apiResponseText = data.candidates[0].content.parts[0].text
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .trim();
+    } else {
+      throw new Error("Unexpected API response format");
     }
-    try{
-        const response = await fetch(API_URL,requestOptions);
-        const data = await response.json();
-        if(!response.ok) throw new Error(data.error.message);
-        const apiResponseText = data.candidates[0].content.parts[0].text.replace(/\*\(.*?)\*\*/g, "$1").trim();
-        messageElement.innerText = apiResponseText;
-    }catch(error){
-        console.log(error);
-    }finally{
-        incomingMessageDiv.classList.remove("thinking");
-    }
-}
+
+    messageElement.innerText = apiResponseText;
+  } catch (error) {
+    console.error("Error generating bot response:", error);
+    messageElement.innerText =
+      "Sorry, I couldn't process that response. Please try again.";
+    messageElement.style.color = "#ff0000";
+  } finally {
+    userData.file = {};
+    incomingMessageDiv.classList.remove("thinking");
+    // Clear the file data after sending
+    userData.file = { data: null, mime_type: null };
+  }
+};
 
 const handleOutgoingMessage = (e) => {
   e.preventDefault();
   userData.message = messageInput.value.trim();
+  if (!userData.message && !userData.file.data) return; // Prevent sending empty messages without attachments
   messageInput.value = "";
-  const messageContent = `<div class="message-text">${userData.message}</div>`;
+  const messageContent = `<div class="message-text">${userData.message}</div>
+  ${userData.file.data ? `<img src="data:${userData.file.mime_type};base64,${userData.file.data}" class="attachment" />` : ""}`;
   const outgoingMessageDiv = createMessageElement(
     messageContent,
     "user-message"
   );
-  outgoingMessageDiv.querySelector(".message-text").textContent =
-    userData.message;
   chatBody.appendChild(outgoingMessageDiv);
+  chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 
   setTimeout(() => {
     const messageContent = `<svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
@@ -73,17 +118,49 @@ const handleOutgoingMessage = (e) => {
       "bot-message"
     );
     chatBody.appendChild(incomingMessageDiv);
+    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
     generateBotResponse(incomingMessageDiv);
   }, 600);
 };
 
-messageInput.addEventListener("keydown", (e) => {
-  const userMessage = e.target.value.trim();
-  if (e.key === "Enter" && userMessage) {
+// Make sure the DOM is fully loaded before attaching event listeners
+document.addEventListener("DOMContentLoaded", () => {
+  const chatForm = document.querySelector(".chat-form");
+
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
     handleOutgoingMessage(e);
-  }
+  });
+
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent default to avoid line break
+      handleOutgoingMessage(e);
+    }
+  });
+
+  sendMessageButton.addEventListener("click", (e) => handleOutgoingMessage(e));
 });
 
-// sendMessageButton.addEventListener("click",() =>{
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
 
-// })
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    fileUploadWrapper.querySelector("img").src = e.target.result;
+    fileUploadWrapper.classList.add("file-uploaded");
+    const base64String = e.target.result.split(",")[1];
+
+    userData.file = {
+      data: base64String,
+      mime_type: file.type,
+    };
+    fileInput.value = "";
+  };
+  reader.readAsDataURL(file);
+});
+
+document
+  .querySelector("#file-upload")
+  .addEventListener("click", () => fileInput.click());
