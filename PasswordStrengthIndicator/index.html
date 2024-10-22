@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Indicator</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins',sans-serif;
+            box-sizing: border-box;
+        }
+        .container{
+            height: 100vh;
+            width: 100%;
+            background: #201f21;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .input-box{
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+        }
+        .input-box input{
+            width: 100%;
+            height: 60px;
+            padding: 0 20px;
+            border: 1px solid #ccc;
+            outline: 0;
+            color: #fff;
+            background: transparent;
+        }
+        button{
+            background: transparent;
+            border: 0;
+            outline: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 15px;
+        }
+        button img{
+            width: 35px;
+        }
+        #message{
+            position: absolute;
+            bottom: -30px;
+            color: #fff;
+            font-size: 15px;
+            display: none;
+        }
+        ::placeholder{
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-box">
+            <input type="password" name="password" id="password" placeholder="Password">
+            <button type="submit"><img src="arrow.png"></button>
+            <p id="message">Password is <span id="strength"></span></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
