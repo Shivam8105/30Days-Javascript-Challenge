@@ -20,7 +20,7 @@ pass.addEventListener('input',() => {
         message.style.color = "yellow";
     }
     else if(pass.value.length >= 8){
-        str.innnerHTML = "strong";
+        str.innerHTML = "strong";
         pass.style.borderColor = "#26d730";
         message.style.color = "#26d730";
     }
